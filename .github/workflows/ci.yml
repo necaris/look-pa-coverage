@@ -1,0 +1,107 @@
+name: std-doc-ingestion-client-ci
+on:
+  pull_request:
+    # Dont run if we're only changing documentation or workflows.
+    paths-ignore:
+      - "*.md"
+      - ".github/**"
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  # python-tests:
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: read
+  #     id-token: write
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: EvolutionIQ/devops/.github/actions/python-checks@main
+  #       with:
+  #         use_bot_ssh_key: true
+  #         git_bot_ssh_key: ${{ secrets.GIT_BOT_SSH_KEY }}
+
+  python-tests-with-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build coverage file
+        run: |
+          pytest
+          --junitxml=pytest.xml
+          --cov-report=term-missing:skip-covered
+          | tee pytest-coverage.txt
+      - name: Pytest coverage comment
+        uses: MishaKav/pytest-coverage-comment@main
+        with:
+          pytest-coverage-path: ./pytest-coverage.txt
+          junitxml-path: ./pytest.xml
+      - name: Code Coverage Report
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: ./pytest.xml
+          fail_below_min: true
+          format: markdown
+          hide_branch_rate: false
+          hide_complexity: true
+          indicators: true
+          output: both
+          thresholds: "70 90"
+      - name: Add Coverage PR Comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: github.event_name == 'pull_request'
+        with:
+          recreate: true
+          path: code-coverage-results.md
+
+  # poetry-versioning:
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: write
+  #   steps:
+  #     - uses: EvolutionIQ/devops/.github/actions/poetry-package-versioning@main
+  #       with:
+  #         pull_request_head_ref: ${{ github.event.pull_request.head.ref }}
+  #         pull_request_title: ${{ github.event.pull_request.title }}
+  #         gh_bot_token: ${{ secrets.GH_BOT_TOKEN }}
+
+  # container-build:
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: read
+  #     id-token: write
+  #   steps:
+  #     - uses: actions/checkout@v4
+
+  #     - name: Auth
+  #       uses: google-github-actions/auth@v2
+  #       with:
+  #         workload_identity_provider: "projects/136280203432/locations/global/workloadIdentityPools/eiq-gha-pool/providers/eiq-gha-provider"
+  #         service_account: "svc-gha@eiq-artifactory.iam.gserviceaccount.com"
+  #         access_token_lifetime: "300s" # default: '3600s' (1 hour)
+
+  #     - name: Build and Push
+  #       uses: EvolutionIQ/devops/.github/actions/docker-build-push-everywhere@main
+  #       with:
+  #         image: ${{ github.event.repository.name }}
+  #         repository: eng-de
+  #         dockerfile: ./Dockerfile
+  #         context: .
+  #         push: false
+  #         secret-files: |
+  #           "gcp=${{ env.GOOGLE_APPLICATION_CREDENTIALS}}"
+
+  # test-image:
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: read
+  #     id-token: write
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: EvolutionIQ/devops/.github/actions/docker-build-push-test@main
+  #       with:
+  #         repository: eng-de
+  #         image: ${{ github.event.repository.name }}
