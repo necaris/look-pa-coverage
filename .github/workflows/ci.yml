@@ -38,7 +38,7 @@ jobs:
           poetry-version: "1.7.1"
       - run: poetry install --with dev
       - name: Build coverage file
-        run: |
+        run: >-
           poetry run pytest
           --junitxml=pytest.xml
           --cov-report=term-missing:skip-covered
