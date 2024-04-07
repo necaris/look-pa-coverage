@@ -27,6 +27,11 @@ jobs:
 
   python-tests-with-coverage:
     runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      issues: write
+      pull-requests: write
+      statuses: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
