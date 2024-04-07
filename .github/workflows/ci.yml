@@ -45,7 +45,7 @@ jobs:
       - name: Build coverage file
         run: >-
           poetry run pytest
-          --junitxml=pytest.xml
+          --junit-xml=pytest.xml
           --cov-report=term-missing:skip-covered
           | tee pytest-coverage.txt
       - name: Pytest coverage comment
